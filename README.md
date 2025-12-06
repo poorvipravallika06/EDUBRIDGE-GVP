@@ -27,6 +27,8 @@ Creating a transparent bridge between college learners and top MNC hiring requir
 
  
  Core Features (Enhanced & Highly Polished)
+
+ 
 1️⃣ AI-Powered Skill Assessment & Recommendation
 
 Uses advanced ML models to analyze student strengths, learning patterns, and domain interest.
@@ -160,3 +162,4 @@ Companies gain verified, skill-mapped talent directly from campuses.
 Colleges gain complete visibility into student progress and placements.
 
 EduBridge transforms traditional engineering education into future-ready, industry-ready learning.
+
