@@ -2,6 +2,9 @@
 
 EduBridge is an AI-powered, industry-aligned learning ecosystem built to bridge the widening gap between engineering students and the rapidly evolving technologies, tools, and hiring trends of top MNCs. Its purpose is to transform traditional engineering education into a career-oriented, skill-driven experience by providing students with personalized learning paths, hands-on lab environments, and real-time AI mentorship. The platform identifies individual skill gaps through intelligent assessments, compares them with current MNC hiring requirements, and recommends adaptive learning modules in English and regional languages to maximize understanding. EduBridge integrates real-time cloud labs for DevOps, AI, Data Science, Cloud, and Cybersecurity, supported by AI-based teaching assistants for doubt solving, content generation, and concept reinforcement. Students receive project ideas, guided architectures, resume optimization, interview simulations, and internship readiness scoring, enabling them to build employable portfolios aligned with industry standards. Market opportunity is massive, as millions of engineering students lack direct exposure to tools like Docker, Kubernetes, AWS, TensorFlow, and PowerBI, and companies face a persistent skill mismatch during recruitment. EduBridge solves this at scale through smart analytics dashboards for colleges and industries, peer matching, collaboration spaces, plagiarism detection, security monitoring, and a comprehensive skill reputation scoring system. Future scope includes AI digital twins for lifelong learning guidance, a metaverse-based virtual skills lab, blockchain-based verified skill passports, automated hackathon engines, predictive hiring analytics for companies, and nationwide integration with academia-industry talent pipelines. In essence, EduBridge emerges as a complete, next-generation talent acceleration platform that empowers students, supports educators, assists recruiters, and builds a tech workforce ready for the demands of tomorrow’s MNC-driven digital world.
 
+<img width="760" height="386" alt="image" src="https://github.com/user-attachments/assets/c7f9db99-72cd-44a3-be5a-dd6274a8bc05" />
+
+
 
  
  Purpose & Objectives of EDU-BRIDGE
@@ -33,14 +36,48 @@ To help students stay updated with future tech trends such as AI-first systems, 
 
 
  
- Core Features :
+ CORE FEATURES  :
+                                   
+
+<img width="632" height="718" alt="image" src="https://github.com/user-attachments/assets/e39522a3-21a1-4825-b10d-471af9d71aaa" />
+
+
 1.AI-Powered Skill Recommendations – Personalized learning paths based on strengths and industry needs.
-2.Industry Mentorship – Expert tech mentors providing real-time guidance.
+2.Industry Mentorship – Expert tech mentors providing real-time guidance.                
 3.Hands-On Projects & Internships – Practical experience through real-world tasks.
 4.Career Readiness Tools – Resume analysis, mock interviews, and role-based insights.
 5.Personalized Learning – Adaptive content, analytics, and continuous progress tracking.
 6.Skill Gap Identification – AI detects missing skills and suggests improvement areas.
 7.Project & Time Management Support – Tools to manage learning schedules effectively.
+
+
+
+PROJECT IMPLEMENTATION :
+
+<img width="1570" height="710" alt="image" src="https://github.com/user-attachments/assets/d273852f-3c30-45d5-8682-a68910279fa6" />
+
+
+
+
+
+<img width="1600" height="708" alt="image" src="https://github.com/user-attachments/assets/3759280c-f64d-4607-a935-b0137b1d5b53" />
+
+
+
+
+
+<img width="1600" height="730" alt="image" src="https://github.com/user-attachments/assets/f1c86b9d-5ab4-4736-a8b5-ff74d3540f64" />
+
+
+
+
+
+
+
+VIDEO DEMO: 
+
+
+
 
 
 
@@ -123,6 +160,14 @@ Companies gain verified, skill-mapped talent directly from campuses.
 Colleges gain complete visibility into student progress and placements.
 
 EduBridge transforms traditional engineering education into future-ready, industry-ready learning.
+
+
+
+
+
+<img width="904" height="637" alt="image" src="https://github.com/user-attachments/assets/1d971625-d1ca-4982-b57a-8e8395d0bb3c" />
+
+
 
 
 
