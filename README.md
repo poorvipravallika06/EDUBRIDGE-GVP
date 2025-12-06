@@ -92,7 +92,19 @@ Firebase
 
 
 WORKFLOW
+
+
 <img width="753" height="471" alt="image" src="https://github.com/user-attachments/assets/d9ced070-fa8a-4205-818e-8c698e1da272" />
+
+
+
+
+TEAM CONTRIBUTION 
+
+<img width="753" height="246" alt="image" src="https://github.com/user-attachments/assets/bbfd9a3f-f0be-4c00-a64c-3cc013f172ae" />
+
+
+
 
 
 
@@ -111,5 +123,6 @@ Companies gain verified, skill-mapped talent directly from campuses.
 Colleges gain complete visibility into student progress and placements.
 
 EduBridge transforms traditional engineering education into future-ready, industry-ready learning.
+
 
 
