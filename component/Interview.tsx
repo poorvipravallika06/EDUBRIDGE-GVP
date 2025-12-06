@@ -1,0 +1,380 @@
+
+import React, { useState, useEffect, useRef } from 'react';
+import { getInterviewQuiz } from '../services/geminiServices';
+import { Play, AlertTriangle, ShieldAlert, Timer, CheckCircle, XCircle, LogOut, Video, Mic, Maximize } from 'lucide-react';
+
+const ROUND_TYPES = ['Technical', 'DSA', 'Non-Technical'];
+const TOPICS = {
+    Technical: ['Java', 'Python', 'React', 'Node.js', 'SQL'],
+    DSA: ['Arrays', 'Trees', 'Graphs', 'DP'],
+    'Non-Technical': ['Aptitude', 'Logical Reasoning', 'Situational']
+};
+
+interface Question {
+    id: number;
+    question: string;
+    options: string[];
+    correctIndex: number;
+}
+
+const Interview: React.FC = () => {
+    // Setup State
+    const [roundType, setRoundType] = useState('Technical');
+    const [topic, setTopic] = useState('Java');
+    const [difficulty, setDifficulty] = useState('Intermediate');
+    const [isTestActive, setIsTestActive] = useState(false);
+    const [questions, setQuestions] = useState<Question[]>([]);
+    const [currentQIndex, setCurrentQIndex] = useState(0);
+    const [score, setScore] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(600); // 10 mins total
+    const [malpracticeCount, setMalpracticeCount] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [testFinished, setTestFinished] = useState(false);
+    const [hasPermissions, setHasPermissions] = useState(false);
+    const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Helper to stop all media tracks immediately
+    const stopMedia = () => {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+            setMediaStream(null);
+            setHasPermissions(false);
+        }
+    };
+
+    // Permission Handling
+    const requestPermissions = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            setMediaStream(stream);
+            setHasPermissions(true);
+        } catch (err) {
+            console.error(err);
+            alert("Camera and Microphone permissions are required for the interview. Please allow access.");
+        }
+    };
+
+    // Attach stream to video element whenever view changes or stream updates
+    useEffect(() => {
+        if (videoRef.current && mediaStream) {
+            videoRef.current.srcObject = mediaStream;
+        }
+    }, [mediaStream, isTestActive, testFinished]);
+
+    // Cleanup stream on unmount
+    useEffect(() => {
+        return () => {
+            stopMedia();
+        };
+    }, []);
+
+    const finishTest = () => {
+        stopMedia(); // Turn off camera immediately
+        setIsTestActive(false);
+        setTestFinished(true);
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(e => console.log(e));
+        }
+    };
+
+    // Malpractice Detection (Immediate Stop)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden && isTestActive) {
+                // Immediate termination
+                alert("TEST TERMINATED: You navigated away from the test window.");
+                finishTest();
+            }
+        };
+
+        if (isTestActive) {
+            document.addEventListener("visibilitychange", handleVisibilityChange);
+            // Enter Fullscreen
+            containerRef.current?.requestFullscreen().catch(err => console.log(err));
+        }
+
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+        };
+    }, [isTestActive]);
+
+    // Timer
+    useEffect(() => {
+        if (isTestActive && timeLeft > 0) {
+            const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+            return () => clearInterval(timer);
+        } else if (timeLeft === 0 && isTestActive) {
+            finishTest();
+        }
+    }, [isTestActive, timeLeft]);
+
+    const startTest = async () => {
+        if (!hasPermissions) {
+            alert("Please click 'Allow' in the System Check panel to enable Camera & Mic first.");
+            return;
+        }
+        setLoading(true);
+        try {
+            const quiz = await getInterviewQuiz(roundType, topic, difficulty);
+            if (quiz && quiz.length > 0) {
+                setQuestions(quiz);
+                setIsTestActive(true);
+                setTestFinished(false);
+                setScore(0);
+                setCurrentQIndex(0);
+                setTimeLeft(300); // 5 mins for 5 questions
+                setMalpracticeCount(0);
+            } else {
+                alert("Failed to generate questions. Please try again.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("An error occurred while starting the test.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAnswer = (optionIndex: number) => {
+        if (optionIndex === questions[currentQIndex].correctIndex) {
+            setScore(prev => prev + 1);
+        }
+
+        if (currentQIndex < questions.length - 1) {
+            setCurrentQIndex(prev => prev + 1);
+        } else {
+            finishTest();
+        }
+    };
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    };
+
+    // --- Render ---
+
+    if (isTestActive) {
+        return (
+            <div ref={containerRef} className="fixed inset-0 bg-slate-900 text-white z-50 flex flex-col p-8 overflow-y-auto">
+                {/* Test Header */}
+                <div className="flex justify-between items-center mb-8 bg-slate-800 p-4 rounded-xl border border-slate-700 shrink-0">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 text-red-400 font-bold animate-pulse">
+                            <span className="w-3 h-3 bg-red-500 rounded-full"></span> REC
+                        </div>
+                        <div className="bg-slate-700 px-4 py-1 rounded text-sm font-mono flex items-center gap-2">
+                             <Timer className="h-4 w-4" /> {formatTime(timeLeft)}
+                        </div>
+                        <div className="bg-slate-700 px-4 py-1 rounded text-sm text-yellow-400 font-bold flex items-center gap-2">
+                            <ShieldAlert className="h-4 w-4" /> Strict Proctoring Active
+                        </div>
+                    </div>
+                    <button onClick={finishTest} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-bold text-sm flex items-center gap-2">
+                        <LogOut className="h-4 w-4" /> Exit Test
+                    </button>
+                </div>
+
+                <div className="flex flex-col lg:flex-row flex-1 gap-8">
+                    {/* Question Area */}
+                    <div className="flex-1 flex flex-col justify-center max-w-4xl mx-auto w-full">
+                        <div className="mb-6">
+                            <span className="text-slate-400 text-sm uppercase tracking-wider font-bold">Question {currentQIndex + 1} / {questions.length}</span>
+                            <h2 className="text-2xl md:text-3xl font-bold mt-2 leading-relaxed">{questions[currentQIndex].question}</h2>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {questions[currentQIndex].options.map((opt, idx) => (
+                                <button 
+                                    key={idx}
+                                    onClick={() => handleAnswer(idx)}
+                                    className="p-6 bg-slate-800 border-2 border-slate-700 rounded-xl hover:border-indigo-500 hover:bg-slate-700 text-left transition-all font-medium text-lg"
+                                >
+                                    <span className="bg-slate-600 px-2 py-0.5 rounded text-sm mr-3 font-bold">{String.fromCharCode(65+idx)}</span>
+                                    {opt}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Camera Feed */}
+                    <div className="w-full lg:w-64 flex flex-col gap-4 shrink-0">
+                        <div className="bg-black rounded-xl overflow-hidden border-2 border-slate-700 shadow-xl relative aspect-video">
+                             <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
+                             <div className="absolute bottom-2 left-2 bg-black/60 px-2 rounded text-xs">Live Feed</div>
+                        </div>
+                        <div className="p-4 bg-slate-800 rounded-xl border border-slate-700 text-xs text-slate-400">
+                            Face must be visible at all times. Audio is being monitored for multiple voices.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 space-y-8 animate-in fade-in duration-500">
+            {/* Header with Gradient */}
+            <div className="flex items-center gap-4 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-xl p-6 rounded-2xl border border-blue-500/30 shadow-2xl">
+                <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
+                    <Play className="h-7 w-7 text-white" />
+                </div>
+                <div>
+                    <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">🎯 Mock Interview Simulator</h2>
+                    <p className="text-slate-300 text-sm">Timed assessments with AI proctoring and real-time feedback.</p>
+                </div>
+            </div>
+
+            {testFinished ? (
+                <div className="bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-xl p-12 rounded-2xl shadow-2xl border border-purple-500/30 text-center max-w-2xl mx-auto relative overflow-hidden animate-in fade-in duration-500">
+                    <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-green-600/10 rounded-full blur-3xl animate-pulse"></div>
+                        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+                    </div>
+                    <div className="relative z-10 space-y-6">
+                        <div className="w-24 h-24 bg-gradient-to-br from-green-500/20 to-emerald-600/20 rounded-full flex items-center justify-center mx-auto border-2 border-green-500/30">
+                             {score > 2 ? <CheckCircle className="h-12 w-12 text-green-400" /> : <XCircle className="h-12 w-12 text-orange-400" />}
+                        </div>
+                        <div>
+                            <h3 className="text-4xl font-bold bg-gradient-to-r from-green-300 to-emerald-300 bg-clip-text text-transparent mb-2">Interview Completed ✨</h3>
+                            <p className="text-slate-300 mb-2">You scored <strong className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent text-2xl">{score} / {questions.length}</strong></p>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-left bg-slate-800/50 p-6 rounded-xl border border-slate-700/50">
+                            <div>
+                                <p className="text-xs text-slate-400 uppercase font-bold mb-1">Round</p>
+                                <p className="font-semibold text-slate-200">{roundType}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-400 uppercase font-bold mb-1">Performance</p>
+                                <p className={`font-semibold ${score > 3 ? 'text-green-400' : 'text-orange-400'}`}>
+                                    {score > 4 ? "🌟 Excellent" : score > 2 ? "👍 Good" : "📈 Needs Improvement"}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <button onClick={() => setTestFinished(false)} className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 duration-200">
+                            🔄 Take Another Test
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className="grid md:grid-cols-2 gap-8 items-start max-w-7xl mx-auto">
+                    {/* Config Panel */}
+                    <div className="bg-gradient-to-br from-slate-800/50 via-blue-900/30 to-slate-800/50 backdrop-blur-xl p-8 rounded-2xl border border-blue-500/30 shadow-2xl space-y-6 h-fit">
+                        <div className="space-y-4">
+                            <div>
+                                <label className="font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent block mb-3">Round Type</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {ROUND_TYPES.map(t => (
+                                        <button 
+                                            key={t} onClick={() => { setRoundType(t); setTopic(TOPICS[t as keyof typeof TOPICS][0]); }}
+                                            className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
+                                                roundType === t ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-purple-500' : 'bg-slate-800/50 text-slate-300 border-slate-600 hover:border-blue-500/50 hover:bg-slate-700/50'
+                                            }`}
+                                        >
+                                            {t}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="font-bold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent block mb-3">Focus Topic</label>
+                                <select 
+                                    value={topic} onChange={(e) => setTopic(e.target.value)}
+                                    className="w-full p-3 bg-slate-900/50 text-slate-100 border border-blue-400/30 rounded-lg font-medium outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-slate-500"
+                                >
+                                    {TOPICS[roundType as keyof typeof TOPICS].map(t => <option key={t}>{t}</option>)}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="font-bold bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent block mb-3">Difficulty</label>
+                                <select 
+                                    value={difficulty} onChange={(e) => setDifficulty(e.target.value)}
+                                    className="w-full p-3 bg-slate-900/50 text-slate-100 border border-purple-400/30 rounded-lg font-medium outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder-slate-500"
+                                >
+                                    <option>Beginner</option>
+                                    <option>Intermediate</option>
+                                    <option>Advanced</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="bg-orange-500/10 p-4 rounded-xl border border-orange-500/30 text-sm space-y-2">
+                             <p className="font-bold text-orange-300 flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Proctoring Rules</p>
+                             <ul className="list-disc pl-4 space-y-1 text-orange-200">
+                                 <li>Full screen mode is mandatory.</li>
+                                 <li>Tab switching triggers <strong>immediate termination</strong>.</li>
+                                 <li>Camera and Microphone must be on.</li>
+                             </ul>
+                        </div>
+
+                        <button 
+                            onClick={startTest}
+                            disabled={loading}
+                            className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 text-white py-4 rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl flex items-center justify-center gap-2 disabled:opacity-50 transform hover:scale-105 duration-200"
+                        >
+                            {loading ? "Generating Quiz..." : "▶ Start Interview"}
+                        </button>
+                    </div>
+
+                    {/* Preview / Instructions */}
+                    <div className="bg-gradient-to-br from-slate-800/50 via-purple-900/30 to-slate-800/50 backdrop-blur-xl text-white p-8 rounded-2xl shadow-xl relative overflow-hidden min-h-[600px] flex flex-col justify-between border border-purple-500/30">
+                         <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                            <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
+                            <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+                         </div>
+                         
+                         <div className="relative z-10">
+                             <h3 className="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">🛡️ System Check</h3>
+                             <div className="space-y-4">
+                                 <div className="flex items-center justify-between bg-slate-800/50 p-4 rounded-lg backdrop-blur-sm border border-slate-700/50 hover:border-green-500/50 transition-all">
+                                     <div className="flex items-center gap-3">
+                                         <Video className="h-5 w-5 text-blue-400" />
+                                         <span className="text-slate-200">Camera Access</span>
+                                     </div>
+                                     {hasPermissions ? <CheckCircle className="h-5 w-5 text-green-400" /> : <button onClick={requestPermissions} className="text-xs bg-gradient-to-r from-blue-600 to-purple-600 px-3 py-1 rounded hover:from-blue-500 hover:to-purple-500 transition-all font-semibold">Allow</button>}
+                                 </div>
+                                 <div className="flex items-center justify-between bg-slate-800/50 p-4 rounded-lg backdrop-blur-sm border border-slate-700/50 hover:border-green-500/50 transition-all">
+                                     <div className="flex items-center gap-3">
+                                         <Mic className="h-5 w-5 text-pink-400" />
+                                         <span className="text-slate-200">Microphone Access</span>
+                                     </div>
+                                     {hasPermissions ? <CheckCircle className="h-5 w-5 text-green-400" /> : <span className="text-xs text-slate-400 bg-slate-700/50 px-2 py-1 rounded">Waiting</span>}
+                                 </div>
+                                 <div className="flex items-center justify-between bg-slate-800/50 p-4 rounded-lg backdrop-blur-sm border border-slate-700/50 hover:border-green-500/50 transition-all">
+                                     <div className="flex items-center gap-3">
+                                         <Maximize className="h-5 w-5 text-cyan-400" />
+                                         <span className="text-slate-200">Fullscreen Capable</span>
+                                     </div>
+                                     <CheckCircle className="h-5 w-5 text-green-400" />
+                                 </div>
+                             </div>
+                         </div>
+
+                         <div className="mt-8 relative z-10">
+                             <div className="flex gap-4">
+                                 <div className="w-1/2 bg-slate-950 rounded-lg p-2 aspect-video flex items-center justify-center border border-slate-600/50 overflow-hidden shadow-lg">
+                                     <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover rounded" />
+                                     {!hasPermissions && <span className="text-xs text-slate-400 bg-slate-900/80 px-2 py-1 rounded absolute">Camera Off</span>}
+                                 </div>
+                                 <div className="w-1/2 flex flex-col justify-end text-sm space-y-2 text-slate-300 p-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                                     <p className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-400" /> Ensure well-lit room</p>
+                                     <p className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-400" /> No other people visible</p>
+                                     <p className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-400" /> Internet connection stable</p>
+                                 </div>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default Interview;
